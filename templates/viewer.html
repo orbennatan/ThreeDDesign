@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D CAD Viewer</title>
+  <meta name="description" content="Interactive 3D CAD model viewer powered by OpenCascade and Three.js">
+  <link rel="stylesheet" href="/static/css/viewer.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">3D</div>
+        <div>
+          <h1>CAD Viewer</h1>
+          <div class="subtitle">OpenCascade + Three.js</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Models</h3>
+        <div id="model-list" class="model-list">
+          <div class="empty-state">
+            <div class="icon">&#128230;</div>
+            <div>No models yet.</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px;">
+          <button class="btn btn-primary" style="width:100%;" id="btn-refresh">Refresh Models</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Display</h3>
+        <div class="control-group">
+          <div class="control-row">
+            <span class="control-label">Wireframe</span>
+            <div id="toggle-wireframe" class="toggle"></div>
+          </div>
+          <div class="control-row">
+            <span class="control-label">Edges</span>
+            <div id="toggle-edges" class="toggle active"></div>
+          </div>
+          <div class="control-row">
+            <span class="control-label">Grid</span>
+            <div id="toggle-grid" class="toggle active"></div>
+          </div>
+          <div class="control-row">
+            <span class="control-label">Auto Rotate</span>
+            <div id="toggle-rotate" class="toggle"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Model Color</h3>
+        <div class="color-swatches" id="color-swatches">
+          <div class="color-swatch" style="background:#6382ff;" data-color="#6382ff"></div>
+          <div class="color-swatch" style="background:#38bdf8;" data-color="#38bdf8"></div>
+          <div class="color-swatch" style="background:#34d399;" data-color="#34d399"></div>
+          <div class="color-swatch" style="background:#fbbf24;" data-color="#fbbf24"></div>
+          <div class="color-swatch" style="background:#f87171;" data-color="#f87171"></div>
+          <div class="color-swatch" style="background:#c084fc;" data-color="#c084fc"></div>
+          <div class="color-swatch" style="background:#94a3b8;" data-color="#94a3b8"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Camera</h3>
+        <div class="btn-group">
+          <button class="btn" data-view="front">Front</button>
+          <button class="btn" data-view="top">Top</button>
+          <button class="btn" data-view="right">Right</button>
+        </div>
+        <div class="btn-group" style="margin-top:6px;">
+          <button class="btn" data-view="iso">Iso</button>
+          <button class="btn" id="btn-reset-camera">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="viewport" id="viewport">
+      <canvas id="cad-canvas"></canvas>
+
+      <div id="welcome-screen" class="welcome-screen">
+        <div class="icon">&#128295;</div>
+        <h2>Welcome to CAD Viewer</h2>
+        <p>Generate a model with <code>python generate_model.py</code> then click <strong>Refresh Models</strong> to load it.</p>
+      </div>
+
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading model...</div>
+      </div>
+
+      <div class="info-bar" id="info-bar" style="display:none;">
+        <div class="info-item">
+          <span class="dot"></span>
+          <span class="label">Triangles:</span>
+          <span class="value" id="info-tris">0</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Vertices:</span>
+          <span class="value" id="info-verts">0</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Size:</span>
+          <span class="value" id="info-size">-</span>
+        </div>
+      </div>
+
+      <div class="viewport-hud" id="viewport-hud" style="display:none;">
+        <button class="hud-btn" title="Fit to view" id="btn-fit">&#8862;</button>
+        <button class="hud-btn" title="Toggle perspective" id="btn-projection">&#9671;</button>
+      </div>
+    </main>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="/static/js/viewer.js"></script>
+</body>
+</html>
