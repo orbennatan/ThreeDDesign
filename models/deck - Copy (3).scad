@@ -3,9 +3,9 @@ show_labels = true;
 $fn = 64;
 
 // --- 1. MATERIAL GRADES & PROFILES ---
-main_h = 60; main_w = 40; main_wall = 3.0;
-joist_h = 60; joist_w = 40; joist_wall = 3.0;
-pole_h = 40; pole_w = 40; pole_wall = 3.0;
+main_h = 100; main_w = 50; main_wall = 4.0;
+joist_h = 100; joist_w = 50; joist_wall = 4.0;
+pole_h = 100; pole_w = 50; pole_wall = 4.0;
 ipe_thick = 20; ipe_w = 140; ipe_gap = 1;
 
 // --- 2. DECK DIMENSIONS ---
@@ -228,12 +228,9 @@ rail_z0 = deck_elev + main_h + ipe_thick; // top of IPE planks
 // East railing: along y = 0, x from 0 to deck_len
 color("DimGray")
 translate([0, 0, rail_z0]) {
-    // vertical bars: exact rail_gap between them, pattern centered in run
-    n_e = floor((deck_len - rail_bar) / rail_pitch) + 1;
-    off_e = (deck_len - (n_e * rail_bar + (n_e - 1) * rail_gap)) / 2;
-    for (i = [0 : n_e - 1])
-        translate([off_e + i * rail_pitch, 0, 0])
-            cube([rail_bar, rail_bar, rail_h]);
+    // vertical bars
+    for (x = [0 : rail_pitch : deck_len - rail_bar])
+        translate([x, 0, 0]) cube([rail_bar, rail_bar, rail_h]);
     // round top tube, centered on bar line, top of tube at z = rail_h
     translate([0, rail_bar / 2, rail_h - top_d / 2])
         top_tube(deck_len);
@@ -242,24 +239,18 @@ translate([0, 0, rail_z0]) {
 // North railing: along x = deck_len, y from 0 to deck_wid
 color("DimGray")
 translate([deck_len - rail_bar, 0, rail_z0]) {
-    n_n = floor((deck_wid - rail_bar) / rail_pitch) + 1;
-    off_n = (deck_wid - (n_n * rail_bar + (n_n - 1) * rail_gap)) / 2;
-    for (i = [0 : n_n - 1])
-        translate([0, off_n + i * rail_pitch, 0])
-            cube([rail_bar, rail_bar, rail_h]);
+    for (y = [0 : rail_pitch : deck_wid - rail_bar])
+        translate([0, y, 0]) cube([rail_bar, rail_bar, rail_h]);
     translate([rail_bar / 2, 0, rail_h - top_d / 2])
         rotate([0, 0, 90]) top_tube(deck_wid);
 }
 
 // Generic straight rail run of length L, oriented along +X.
-// Gap between bars is exactly rail_gap; pattern is centered in the run.
+// Vertical bars sit on z=0; round top tube tops out at z = rail_h.
 module rail_run(L) {
     color("DimGray") {
-        n = floor((L - rail_bar) / rail_pitch) + 1;
-        off = (L - (n * rail_bar + (n - 1) * rail_gap)) / 2;
-        for (i = [0 : n - 1])
-            translate([off + i * rail_pitch, 0, 0])
-                cube([rail_bar, rail_bar, rail_h]);
+        for (x = [0 : rail_pitch : L - rail_bar])
+            translate([x, 0, 0]) cube([rail_bar, rail_bar, rail_h]);
         translate([0, rail_bar / 2, rail_h - top_d / 2])
             top_tube(L);
     }
@@ -281,17 +272,11 @@ translate([0, -1000, deck_elev + main_h]) {
 // Stair rail with gravity-vertical bars and an inclined round top tube.
 // Origin at the top of the flight, on the stair surface (top tread).
 // Bars rise straight up (world +Z) from the slope.
-// Gap between bars is exactly rail_gap (10 cm); pattern centered in the run.
 module stair_rail(side_y) {
-    L = num_steps * step_tread;
-    n = floor((L - rail_bar) / rail_pitch) + 1;
-    off = (L - (n * rail_bar + (n - 1) * rail_gap)) / 2;
     color("DimGray") {
-        for (i = [0 : n - 1]) {
-            x = off + i * rail_pitch;
+        for (x = [0 : rail_pitch : num_steps * step_tread - rail_bar])
             translate([x, side_y, -x * step_h / step_tread])
                 cube([rail_bar, rail_bar, rail_h]);
-        }
         // Inclined round top tube: tube top at z = rail_h at x=0,
         // descending parallel to the slope.
         translate([0, side_y + rail_bar / 2, rail_h - top_d / 2])
@@ -310,19 +295,15 @@ translate([0, -1000, deck_elev]) translate([1000, 0, main_h])
 // Deck-facing side of flight 1: short vertical bars rising from each
 // tread up to the deck-rail base (rail_z0). No top rail here - the deck's
 // east rail provides the top boundary, so we just fill the open gap.
-// Exact rail_gap (10 cm) between bars; pattern centered along the flight.
-color("DimGray") {
-    L_df = num_steps * step_tread;
-    n_df = floor((L_df - rail_bar) / rail_pitch) + 1;
-    off_df = (L_df - (n_df * rail_bar + (n_df - 1) * rail_gap)) / 2;
-    for (i = [0 : n_df - 1]) {
-        x_local = off_df + i * rail_pitch;
-        i_step = min(num_steps - 1, floor(x_local / step_tread));
-        tread_top_z = deck_elev + main_h - i_step * step_h;
-        translate([1000 + x_local, 0, tread_top_z])
-            cube([rail_bar, rail_bar, rail_z0 - tread_top_z]);
-    }
-}
+color("DimGray")
+for (i = [0 : num_steps - 1])
+    for (xo = [0 : rail_pitch : step_tread - rail_bar])
+        translate([1000 + i * step_tread + xo,
+                   0,
+                   deck_elev + main_h - i * step_h])
+            cube([rail_bar,
+                  rail_bar,
+                  rail_z0 - (deck_elev + main_h - i * step_h)]);
 
 // Lower podest (x=p2_x..p2_x+1000, y=-1000..0, z=p2_z)
 // Open sides: north (y=0) and east (x=p2_x+1000).

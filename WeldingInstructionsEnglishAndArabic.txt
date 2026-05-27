@@ -1,0 +1,67 @@
+Tell the ironsmith this as a **fabrication requirement**, not as a casual request:
+
+```text
+Please fabricate as a structural welded stair frame, not decorative welding.
+
+All stair stringers, tread supports, podest frames, posts, truss web members, top chords, and deck connection points must be continuously welded where they meet.
+
+Use full-perimeter fillet welds around RHS tube joints wherever accessible.
+
+For 3 mm wall RHS members, use approximately 3 mm fillet welds.
+For 4 mm wall RHS members, use approximately 4 mm fillet welds.
+Do not burn through the tube walls.
+
+Grind only sharp edges and dangerous projections. Do not grind structural welds flat unless needed locally and agreed.
+
+All welds should be continuous, visually uniform, with no cracks, porosity, undercut, lack of fusion, or missed corners.
+
+Close/seal open tube ends with welded caps where water can enter.
+
+After welding, clean welds, remove slag/spatter, prime all bare steel and weld zones, and apply corrosion protection suitable for outdoor use.
+
+The stair must be welded to the deck frame at the upper podest, and the lower podest posts must be welded/anchored to base plates fixed to concrete/solid support.
+
+Please confirm:
+- welding method: MIG/MAG or stick
+- electrode/wire type
+- fillet weld size
+- whether welds are continuous or intermittent
+- base plate thickness
+- anchor bolt size/type
+- corrosion protection method
+```
+
+More concise Arabic version you can send:
+
+```text
+أريد تنفيذ الدرج كلحام إنشائي وليس لحام شكلي.
+
+كل نقاط التقاء البروفيلات في الدرج، الشاسيه، القوائم، الجسور، التراس، البودست، ونقاط الاتصال مع الدك يجب أن تكون ملحومة لحام مستمر.
+
+أريد لحام محيطي كامل حول البروفيلات RHS في كل نقطة اتصال ممكنة.
+
+للبروفيلات بسماكة 3 مم: لحام فيليه تقريبا 3 مم.
+للبروفيلات بسماكة 4 مم: لحام فيليه تقريبا 4 مم.
+بدون حرق أو ثقب في جدار البروفيل.
+
+لا يتم تجليخ اللحام الإنشائي بشكل يضعفه، فقط تنظيف الزوائد والحواف الحادة.
+
+يجب أن يكون اللحام نظيفا ومستمرا وبدون تشققات أو فراغات أو ضعف التحام.
+
+إغلاق نهايات البروفيلات المفتوحة بغطاء ملحوم لمنع دخول الماء.
+
+بعد اللحام: تنظيف، برايمر، وحماية ضد الصدأ مناسبة للخارج.
+
+الدرج يجب أن يكون ملحوما/مثبتا جيدا مع هيكل الدك في البودست العلوي، والبودست السفلي يجب أن يكون مثبتا بصفائح قاعدة وبراغي تثبيت مناسبة في خرسانة أو قاعدة صلبة.
+
+رجاء أكد لي:
+نوع اللحام
+نوع السلك أو الإلكترود
+مقاس لحام الفيليه
+هل اللحام مستمر أم متقطع
+سماكة صفائح القاعدة
+نوع ومقاس براغي التثبيت
+طريقة الحماية من الصدأ
+```
+
+Important: do **not** tell him “the calculation proves it is safe.” Tell him the calculation assumes proper structural welds, full contact, good anchors, and no weak/missed joints. A bad weld or bad anchor can invalidate the whole design.
