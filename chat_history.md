@@ -53,3 +53,20 @@ This file will contain a running summary of all actions, changes, and key decisi
 - Verified that all exports, compiled files, and colors are in perfect, error-free sync.
 
 ---
+
+## 2026-05-28 - Material Profile Analysis and CSV Generation
+- Analyzed the [models/deck_only.scad](models/deck_only.scad) file to extract a complete Bill of Materials (BOM) for the steel profiles.
+- Identified and categorized profiles by role: Main Longbars, Transverse Latitudes, Support Poles, Railing Posts, Vertical Bars, and Handrail Tubes.
+- Calculated exact instance counts based on the OpenSCAD logic:
+    - **Main Longbars (4)**: RHS 60x40x3.
+    - **Transverse Latitudes (17)**: RHS 40x40x2.
+    - **Support Poles (13)**: RHS 40x40x3 (adjustable rock-wall supports).
+    - **Railing Posts (6)**: RHS 40x40x3.
+    - **Vertical Railing Bars (91)**: Solid 10x10 mm.
+    - **Handrail Tubes (2)**: Round 30x2 mm pipes.
+- Provided translations for each role in **English, Arabic, and Hebrew** to support multi-language fabrication instructions.
+- Generated [deck_profile_schedule.csv](deck_profile_schedule.csv) containing the full schedule with dimensions and counts.
+- Created `history.md` as per persistent memory instructions to track session actions.
+
+---
+

@@ -10,6 +10,8 @@ joist_w = 40; joist_wall = 3.0;
 pole_h = 40; pole_w = 40; pole_wall = 3.0;
 ipe_thick = 20;
 ipe_w = 140; ipe_gap = 1;
+plate_w = 180; plate_d = 180; plate_thick = 10;
+level_bolt_d = 16; level_bolt_h = 120;
 
 // Recommended profiles for structural railing posts
 rpost_w = 40; rpost_h = 40; rpost_wall = 3.0;
@@ -18,6 +20,8 @@ rpost_w = 40; rpost_h = 40; rpost_wall = 3.0;
 deck_len = 5950; deck_wid = 3040;
 deck_elev = 2380;
 bar_spacing = 380;
+lat_count = ceil((deck_len - main_w) / bar_spacing) + 1;
+lat_spacing = (deck_len - main_w) / (lat_count - 1);
 reductions = [0, 740, 1060, 1300, 1450, 1540, 1590, 1610, 1610];
 
 // --- MODULES ---
@@ -46,6 +50,26 @@ module flush_pole(h, w_match, h_match) {
     }
 }
 
+module leveling_plate() {
+    color("DarkSlateGray")
+        cube([plate_w, plate_d, plate_thick]);
+
+    color("Black") {
+        for (x = [25, plate_w - 25])
+            for (y = [25, plate_d - 25])
+                translate([x, y, plate_thick])
+                    cylinder(h = level_bolt_h, d = level_bolt_d);
+    }
+}
+
+module adjustable_rock_support(h) {
+    translate([-plate_w/2 + pole_w/2, -plate_d/2 + pole_w/2, 0])
+        leveling_plate();
+
+    translate([0, 0, plate_thick])
+        flush_pole(h - plate_thick, pole_w, pole_w);
+}
+
 // Structural post height increased to pass through wood/latitudes to weld to the main steel frame
 module structural_rail_post(post_height = 1160) {
     color("DarkSlateGray") difference() {
@@ -72,7 +96,8 @@ translate([0, 0, deck_elev]) {
             }
 
             // Transverse Latitude Profiles running East-West (Y axis) on top of the longbars
-            for (x = [0 : bar_spacing : deck_len - main_w]) {
+            for (i = [0 : lat_count - 1]) {
+                x = i * lat_spacing;
                 translate([x, 0, main_h]) steel_rhs_y(main_w, deck_wid, lat_h, lat_wall);
             }
 
@@ -92,17 +117,23 @@ translate([0, 0, deck_elev]) {
         }
 }
 
-// B. SUPPORT POLES
+// B. ADJUSTABLE ROCK-WALL SUPPORTS
 longbar_ys = [0, 1000, 2000, deck_wid - main_w];
 longbar_reductions = [0, 1212, 1553, 1610];
+rock_heights = [0, deck_elev/3, 2*deck_elev/3, deck_elev - 180];
+
 for (i = [0 : 3]) {
     y = longbar_ys[i];
-    for (s = [1 : 3]) {
-        x_supp = s * deck_len / 4;
-        reduction = longbar_reductions[i];
-        if (x_supp > reduction) {
-            translate([x_supp, y + main_w/2 - pole_w/2, 0]) flush_pole(deck_elev, pole_w, pole_w);
-        }
+    rock_z = rock_heights[i];
+    support_h = deck_elev - rock_z;
+    reduction = longbar_reductions[i];
+
+    // 2 supports per bar, evenly spaced between the two extreme anchor points
+    // (south end at x=reduction, north end at x=deck_len).
+    for (s = [1 : 2]) {
+        x_supp = reduction + s * (deck_len - reduction) / 3;
+        translate([x_supp, y + main_w/2 - pole_w/2, rock_z])
+            adjustable_rock_support(support_h);
     }
 }
 
@@ -119,18 +150,19 @@ if (show_labels) {
         translate([deck_len + 200, deck_wid/2, label_z]) rotate([0, 0, 90]) linear_extrude(2) text("NORTH", size = label_size, halign = "center");
     }
 
-    beam_label_size = 200;
+    beam_label_size = 300;
     beam_ys = [0, 1000, 2000, deck_wid - main_w];
     color("Yellow")
         for (i = [0 : len(beam_ys) - 1])
-            translate([deck_len - 300, beam_ys[i] + main_w/2, label_z])
-                linear_extrude(2) text(str(i + 1), size = beam_label_size, halign = "center", valign = "center");
+            translate([deck_len/2, beam_ys[i] + main_w/2, label_z + 80])
+                linear_extrude(20)
+                    text(str(i), size = beam_label_size, halign = "center", valign = "center");
 }
 
 // --- RAILINGS (North + East edges) ---
 rail_h     = 1100;
 rail_bar   = 10;
-rail_gap   = 100;
+rail_gap   = 90;
 rail_pitch = rail_bar + rail_gap;
 top_d    = 30;
 top_wall = 2;
@@ -144,7 +176,8 @@ module top_tube(L) {
 }
 
 translate([0, 0, deck_elev + main_h]) structural_rail_post();
-translate([deck_len/2, 0, deck_elev + main_h]) structural_rail_post();
+translate([deck_len/3 - rpost_w/2, 0, deck_elev + main_h]) structural_rail_post();
+translate([2*deck_len/3 - rpost_w/2, 0, deck_elev + main_h]) structural_rail_post();
 translate([deck_len - rpost_w, 0, deck_elev + main_h]) structural_rail_post();
 translate([deck_len - rpost_w, deck_wid/2, deck_elev + main_h]) structural_rail_post();
 translate([deck_len - rpost_w, deck_wid - rpost_h, deck_elev + main_h]) structural_rail_post();
