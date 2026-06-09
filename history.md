@@ -40,3 +40,10 @@
 - Applied the new 15-point stair_path to models/deck_only - Copy.scad (replaced the prior 1.5-turn 540deg spiral). Updated the explanatory comment. stair_segment_angle stays computed.
 - Validated: no wall hits, no self-overlap, single valley (apex idx 7), start heading -90 (south), end heading +90 (north). OpenSCAD compile EXIT=0.
 - Files: models/deck_only - Copy.scad, design_winding_stairs.py, plot_path.py (ASCII top-down debug map).
+
+## 2026-06-09 - Stair rail vertical balusters (match deck)
+- Asked: give the staircase rail vertical bars like the deck.
+- Added module stair_rail_balusters(offset) in models/deck_only - Copy.scad: walks each stair segment, places rail_bar-square (10mm) vertical cubes of height rail_h at rail_pitch (100mm) spacing along both rail offsets (+/-stair_width/2), interpolating position and z. Tops align with the sloping top rail since stair_level_z is linear in node index.
+- Called it from curved_stair_rails() for both sides. Reused deck rail params (rail_bar=10, rail_gap=90, rail_pitch=100, rail_h=1100).
+- Validated: OpenSCAD compile EXIT=0.
+- Files: models/deck_only - Copy.scad.

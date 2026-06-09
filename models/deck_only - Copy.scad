@@ -596,10 +596,51 @@ module stair_rail_posts_and_top(offset) {
     }
 }
 
+// Vertical baluster infill for one side of the stair rail, matching the
+// deck's railing: rail_bar-square bars at rail_pitch spacing. stair_level_z
+// is linear in the node index, so a bar of height rail_h tops out exactly on
+// the underside of the sloping top rail.
+module stair_rail_balusters(offset) {
+
+    for (i = [0 : stair_risers - 1]) {
+
+        p0 = stair_node_offset_point(i, offset);
+        p1 = stair_node_offset_point(i + 1, offset);
+        g0 = stair_global_xy(p0);
+        g1 = stair_global_xy(p1);
+
+        z0 = stair_level_z(i);
+        z1 = stair_level_z(i + 1);
+
+        seg_len = sqrt(
+            (g1[0] - g0[0]) * (g1[0] - g0[0]) +
+            (g1[1] - g0[1]) * (g1[1] - g0[1])
+        );
+
+        n_bar = max(1, round(seg_len / rail_pitch));
+
+        for (k = [0 : n_bar - 1]) {
+
+            t = k / n_bar;
+
+            translate([
+                g0[0] + (g1[0] - g0[0]) * t - rail_bar/2,
+                g0[1] + (g1[1] - g0[1]) * t - rail_bar/2,
+                z0 + (z1 - z0) * t
+            ])
+                color("DimGray")
+                    cube([rail_bar, rail_bar, rail_h]);
+        }
+    }
+}
+
 module curved_stair_rails() {
 
     stair_rail_posts_and_top(-stair_width/2);
     stair_rail_posts_and_top(stair_width/2);
+
+    stair_rail_balusters(-stair_width/2);
+    stair_rail_balusters(stair_width/2);
 }
 
 module site_reference_geometry() {
