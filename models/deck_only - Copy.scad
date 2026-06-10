@@ -148,6 +148,9 @@ site_wall_top_z = stair_top_z;
 // tread tucked any closer would penetrate leg B. The floor is assumed
 // extended north as needed; treads may cross into positive y. No tread
 // footprint overlaps either wall leg (verified by design_winding_stairs.py).
+// The lowest MODELLED tread (index 13) sits one standard riser (166 mm)
+// above the floor: the final path point is the floor landing, i.e. the
+// floor slab itself is the last step (no tread/stringer reaches below it).
 stair_path = [
     [-stair_width/2 - stair_wall_clearance, 0],
     [-580, -300],
@@ -434,6 +437,28 @@ function stair_node_offset_point(i, off) =
         off
     );
 
+// Mitred offset point shared by the two stringer segments that meet at node
+// i. Both neighbouring segments evaluate the SAME point here (average of the
+// adjacent segment normals, scaled by 1/cos(half-angle) so the perpendicular
+// offset stays = off), so the linear stringer pieces butt together exactly -
+// a full four-sided weld at every joint instead of leaving a gap. Clamped to
+// the modelled-tread segments so the path ends behave (straight, no miter).
+function stair_seam_point(i, off) =
+    let(
+        a  = max(0, i - 1),
+        b  = min(stair_visible_treads - 1, i),
+        nA = stair_segment_normal(a),
+        nB = stair_segment_normal(b),
+        sx = nA[0] + nB[0],
+        sy = nA[1] + nB[1],
+        L  = sqrt(sx * sx + sy * sy),
+        ux = L < 1e-6 ? nB[0] : sx / L,
+        uy = L < 1e-6 ? nB[1] : sy / L,
+        d  = ux * nA[0] + uy * nA[1],     // cos(half turn angle)
+        s  = off / max(0.35, d)           // miter scale (clamped for sharp turns)
+    )
+    [stair_path[i][0] + ux * s, stair_path[i][1] + uy * s];
+
 module solid_member_between(p0, z0, p1, z1, size, c = "SlateGray") {
 
     g0 = stair_global_xy(p0);
@@ -518,19 +543,30 @@ module curved_stair_stringers() {
         stair_width/2 - stair_stringer_w/2
     ];
 
-    for (seg = [0:stair_risers-1])
+    // Lowest centreline z the stringer cube may take so its underside
+    // (z - stair_stringer_w/2) never sinks below the floor slab. Under the
+    // lowest tread the stringer therefore foots exactly ON the floor
+    // instead of punching through it (no excavation needed).
+    min_stringer_z = stair_floor_z + stair_stringer_w/2;
+
+    // Only build stringers under the modelled treads (1..stair_visible_treads).
+    // The final path segment descends to the floor landing - that last
+    // "step down" is the floor slab itself, so no stringer ramps onto it.
+    for (seg = [0:stair_visible_treads-1])
     for (off = stringer_offsets) {
 
-        p0 = stair_offset_point(seg, stair_path[seg], off);
-        p1 = stair_offset_point(seg, stair_path[seg + 1], off);
+        // Shared mitred seam points: segment seg ends where segment seg+1
+        // begins (identical xy and z), so the linear pieces are welded on
+        // all four faces with no gap.
+        p0 = stair_seam_point(seg, off);
+        p1 = stair_seam_point(seg + 1, off);
 
-        solid_member_between(
-            p0,
-            stair_level_z(seg) - ipe_thick - stair_stringer_drop,
-            p1,
-            stair_level_z(seg + 1) - ipe_thick - stair_stringer_drop,
-            stair_stringer_w
-        );
+        z0 = max(stair_level_z(seg) - ipe_thick - stair_stringer_drop,
+                 min_stringer_z);
+        z1 = max(stair_level_z(seg + 1) - ipe_thick - stair_stringer_drop,
+                 min_stringer_z);
+
+        solid_member_between(p0, z0, p1, z1, stair_stringer_w);
     }
 }
 
@@ -562,34 +598,47 @@ module curved_stair_supports() {
 
 module stair_rail_posts_and_top(offset) {
 
-    rail_nodes = [0, 3, 6, 9, 12, 14];
+    // End the rail at the last ACTUAL tread (node = stair_visible_treads),
+    // not at the floor-landing node (stair_risers), which sits ~one going
+    // further north than the lowest step.
+    rail_nodes = [0, 3, 6, 9, 12, stair_visible_treads];
+
+    // Structural posts carry the handrail down INTO the stair support: each
+    // post foots on the stringer centreline (ipe_thick + stringer_drop below
+    // the tread top) rather than just resting on the tread, so the load path
+    // runs handrail -> post -> stringer. The thin balusters in between only
+    // stop falls; these posts give the rail its strength.
+    post_foot_drop = ipe_thick + stair_stringer_drop;
 
     for (i = rail_nodes) {
 
-        p = stair_node_offset_point(i, offset);
+        p = stair_seam_point(i, offset);
         g = stair_global_xy(p);
 
         translate([
             g[0] - rpost_w/2,
             g[1] - rpost_h/2,
-            stair_level_z(i)
+            stair_level_z(i) - post_foot_drop
         ])
-            structural_rail_post(rail_h);
+            structural_rail_post(rail_h + post_foot_drop);
     }
 
-    for (j = [0:len(rail_nodes)-2]) {
+    // Top handrail: one linear piece PER STEP, following the same mitred
+    // seam line as the stringer (stair_seam_point), so the rail approximates
+    // the curve with connected pieces that butt together on all four faces
+    // at every node - matching the stringer construction. Because the rail
+    // and stringer now share this offset line, the vertical posts and thin
+    // rods run straight up between the stringer and the handrail.
+    for (seg = [0:stair_visible_treads-1]) {
 
-        i0 = rail_nodes[j];
-        i1 = rail_nodes[j + 1];
-
-        p0 = stair_node_offset_point(i0, offset);
-        p1 = stair_node_offset_point(i1, offset);
+        p0 = stair_seam_point(seg, offset);
+        p1 = stair_seam_point(seg + 1, offset);
 
         solid_member_between(
             p0,
-            stair_level_z(i0) + rail_h - top_d/2,
+            stair_level_z(seg) + rail_h - top_d/2,
             p1,
-            stair_level_z(i1) + rail_h - top_d/2,
+            stair_level_z(seg + 1) + rail_h - top_d/2,
             top_d,
             "DimGray"
         );
@@ -602,10 +651,14 @@ module stair_rail_posts_and_top(offset) {
 // the underside of the sloping top rail.
 module stair_rail_balusters(offset) {
 
-    for (i = [0 : stair_risers - 1]) {
+    // Infill only the run that carries actual treads; the final
+    // floor-landing segment (index stair_visible_treads) is north of the
+    // last step, so it gets no balusters - keeping the rail flush with the
+    // last actual stair.
+    for (i = [0 : stair_visible_treads - 1]) {
 
-        p0 = stair_node_offset_point(i, offset);
-        p1 = stair_node_offset_point(i + 1, offset);
+        p0 = stair_seam_point(i, offset);
+        p1 = stair_seam_point(i + 1, offset);
         g0 = stair_global_xy(p0);
         g1 = stair_global_xy(p1);
 
@@ -619,17 +672,29 @@ module stair_rail_balusters(offset) {
 
         n_bar = max(1, round(seg_len / rail_pitch));
 
+        // Each baluster stands on the FLAT surface that spans this path
+        // segment - tread(i+1), whose top is at stair_level_z(i+1), or the
+        // floor slab for the lowest segment (stair_level_z(stair_risers) =
+        // stair_floor_z) - and rises to meet the sloping top rail. Footing
+        // every baluster on its tread/floor stops them floating above the
+        // steps and keeps the bottom of the rail connected to the floor.
+        base_z = z1;
+
         for (k = [0 : n_bar - 1]) {
 
             t = k / n_bar;
 
+            // Top follows the sloping walking line + rail_h (matches the
+            // top rail); the base sits flat on the tread/floor below.
+            top_z = z0 + (z1 - z0) * t + rail_h;
+
             translate([
                 g0[0] + (g1[0] - g0[0]) * t - rail_bar/2,
                 g0[1] + (g1[1] - g0[1]) * t - rail_bar/2,
-                z0 + (z1 - z0) * t
+                base_z
             ])
                 color("DimGray")
-                    cube([rail_bar, rail_bar, rail_h]);
+                    cube([rail_bar, rail_bar, top_z - base_z]);
         }
     }
 }

@@ -47,3 +47,63 @@
 - Called it from curved_stair_rails() for both sides. Reused deck rail params (rail_bar=10, rail_gap=90, rail_pitch=100, rail_h=1100).
 - Validated: OpenSCAD compile EXIT=0.
 - Files: models/deck_only - Copy.scad.
+
+## 2026-06-10 - Located eastmost point of lowest stair
+- Asked: xyz of the eastmost point in the lowest part of the lowest stair.
+- Active model: models/deck_only - Copy.scad. Lowest stair = tread i=13 (14-riser winding stair); built from midpoint of stair_path[12]->[13] (local (-3070,-224)), rotated -13.1deg, z=stair_top_z-13*stair_rise=396.4mm top.
+- Eastmost corner (min model_y = min local_x): model (x,y)=(-191.3,-3591.0). Lowest face (bottom of steel cross-beams) z=316.4mm (wood underside 376.4, walking top 396.4).
+- Answer: (x,y,z)=(-191.3, -3591.0, 316.4) mm in model space; east is -y (model=[local_y,local_x], east=negative local_x).
+
+## 2026-06-10 - Corrected eastmost-point calc; Israeli riser check
+- User: lowest stair should end at -2330; z per step per Israeli standards; recalculate.
+- Coordinate fix: prior answer used absolute z (316.4) and the lowest BUILT tread (i=13). Switched to deck-relative z (stair top=0, floor=-2330=abs230).
+- Drop already 2330; floor at z=-2330. Israeli std check: 14 risers, rise=166.4mm(16.6cm) in 15-17.5cm OK; going=300mm; 2R+G=63.3cm in 61-64 OK. 14 is only integer count keeping rise<=17.5cm.
+- Eastmost point of floor-level step (i=14, midpoint path[13]->[14], angle 0): model (x,y,z)=(-78.0,-3604.0,-2330.0); east edge y=-3604 spans x=-78..222.
+- Noted lowest BUILT tread (i=13) is one riser above floor at z(top)=-2163.6 (standard landing); model draws 13 treads (stair_visible_treads=13), floor is the landing. Offered to add a flush bottom tread at -2330 if wanted (understructure would dip to -2410 below slab).
+
+## 2026-06-10 - Fixed stair geometry punching below floor (-2330)
+- User: no part of the stair may go below z=-2330 (would require digging a hole).
+- Diagnosed: treads OK (lowest understructure rel -2243.6); STRINGER beams in bottom segments 12-13 dipped to rel -2530 (200mm below floor abs 230).
+- Fix in models/deck_only - Copy.scad curved_stair_stringers(): clamp each stringer centreline z to max(computed, stair_floor_z + stair_stringer_w/2) so underside rests ON the slab; bottom stringer flattens to floor instead of penetrating. Supports already stand on floor; rails above.
+- Verified: lowest stair point now abs 230 = rel -2330 exactly, nothing below. OpenSCAD compile EXIT=0. Riser stays Israeli-standard 166.4mm.
+
+## 2026-06-10 - Floor slab is now the last step (lowest tread one riser above -2330)
+- User: last modeled stair should be one standard riser ABOVE the -2330 plane; the floor itself is the final step.
+- Treads already ended at lowest tread top -2163.6 (=one rise 166.4mm above floor). Change in models/deck_only - Copy.scad curved_stair_stringers(): loop now [0:stair_visible_treads-1] (segments 0-12) so the final descending segment to the floor landing is no longer built; footing clamp retained so lowest stringer rests exactly on slab.
+- Updated stair_path comment to state floor slab is the last step.
+- Verified: lowest modeled tread top rel -2163.6 (one rise above floor); lowest of ALL stair structure rel -2330.0 = floor exactly, nothing below; rise 166.4mm (Israeli std). OpenSCAD EXIT=0.
+
+## 2026-06-10 - Fixed stair rail balusters floating / not connected at bottom
+- User: stair rail not connected to anything at the bottom. Rendered bottom (OpenSCAD PNGs) and confirmed all balusters floated ~one riser above the treads; bottom ones hovered above the floor.
+- Root cause: off-by-one in stair_rail_balusters() - baluster base sat on the sloping walking line (stair_level_z(i)) while the flat tread beneath a segment is tread(i+1) at stair_level_z(i+1), a full rise lower.
+- Fix in models/deck_only - Copy.scad stair_rail_balusters(): base_z = z1 = stair_level_z(i+1) (the tread it stands on; floor slab for the lowest segment since stair_level_z(14)=stair_floor_z); height = (z0+(z1-z0)*t + rail_h) - base_z so tops still meet the sloping top rail. Now every baluster foots on its tread and the bottom run lands on the floor.
+- Verified: lowest baluster base rel -2330 = floor exactly, none below; bottom balusters on floor; OpenSCAD EXIT=0; re-render shows balusters resting on steps/floor.
+
+## 2026-06-10 - Trimmed stair rail north overhang past last tread
+- User: stair rail too long, extended north beyond the last actual stair.
+- Cause: rail ran to the floor-landing node 14 (path[14], ~300mm/one going north of the last built tread at node 13).
+- Fix in models/deck_only - Copy.scad: stair_rail_posts_and_top() rail_nodes end node 14 -> stair_visible_treads (13); stair_rail_balusters() loop [0:stair_risers-1] -> [0:stair_visible_treads-1] so the floor-landing segment gets no balusters.
+- Verified via OpenSCAD renders: rail/posts/balusters now end flush at the last actual tread, no north overhang. Compile EXIT=0.
+
+## 2026-06-10 - Uniform thin stair-rail supports (removed thick posts)
+- User: stair rail vertical supports change from a thick profile to thin rods; make them uniform top-to-bottom. Chose: all thin rods (10x10).
+- Fix in models/deck_only - Copy.scad stair_rail_posts_and_top(): removed the structural_rail_post (rpost 50x50) loop at rail_nodes; module now only draws the sloping top handrail tube. Vertical members are now exclusively the uniform 10x10 balusters from stair_rail_balusters().
+- Verified render: all verticals uniform thin rods reaching the handrail; top rail intact; OpenSCAD EXIT=0.
+
+## 2026-06-10 - Rail posts now tie handrail into stringers (mixed post+rod rail)
+- User reverted the all-thin-rods change; wants structural posts connecting handrail to the stair support PLUS thin rods between for fall protection.
+- Current file already had thick posts + thin balusters, but posts only rested on the tread top (120mm above stringer; not connected).
+- Fix in models/deck_only - Copy.scad stair_rail_posts_and_top(): added post_foot_drop = ipe_thick + stair_stringer_drop (160mm); each structural_rail_post now starts at stair_level_z(i) - post_foot_drop with height rail_h + post_foot_drop, footing on the stringer centreline.
+- Verified: post base embeds in stringer cube at all nodes 0,3,6,9,12,13 both sides; lowest base rel -2323.6 (>= floor); ~25mm lateral overlap with outer stringer; thin rods unchanged. OpenSCAD EXIT=0; render shows posts running into the side stringers.
+
+## 2026-06-10 - Winding stringer: linear pieces now connect (mitred seams)
+- User: the winding outer support (stringer) is not curved and its pieces don't connect; OK to approximate the curve with linear pieces but every joint must weld all four sides; applies to all parts.
+- Root cause: curved_stair_stringers() built each segment from stair_offset_point(seg,...) using that segment's own normal, so adjacent segments' shared node mapped to different offset points -> gaps.
+- Fix in models/deck_only - Copy.scad: added function stair_seam_point(i,off) = mitred offset shared by both segments at node i (avg of adjacent segment normals, scaled 1/cos(half-angle), clamped 0.35 for sharp turns; ends clamped straight). curved_stair_stringers() now uses seam points for p0/p1, so segment seg end == segment seg+1 start (xy and z identical) for all 3 offset lines (outer/center/inner) and all segments.
+- Verified: max joint xy gap = 0 (shared); offset held ~460-465mm; OpenSCAD compile EXIT=0; render shows continuous stringer with boxy weld knuckles at each node.
+
+## 2026-06-10 - Handrail follows same mitred-seam curve as stringer; verticals plumb
+- User: handrail should use the same curve method as the stringer, so vertical posts and thin rods simply go between stringers and handrail.
+- Fix in models/deck_only - Copy.scad stair_rail_posts_and_top(): top handrail now built one solid_member_between piece PER STEP over segments [0:stair_visible_treads-1] using stair_seam_point(seg/seg+1, offset) at z=stair_level_z+rail_h-top_d/2 (was big jumps between nodes 0,3,6,9,12,13 via stair_node_offset_point). Posts now placed at stair_seam_point(i,offset) too. stair_rail_balusters() switched to stair_seam_point as well.
+- Result: handrail approximates the winding curve with connected/mitred pieces (four-sided weld at each node), same as the stringer; posts and 10x10 rods share the seam line so they run straight (plumb) from stringer up to handrail. Rail offset 500, stringer outer 460 -> posts overlap stringer 25mm (tie-in retained).
+- Verified: OpenSCAD compile EXIT=0; iso render shows continuous curved handrail with plumb rods; seam joints share points.
